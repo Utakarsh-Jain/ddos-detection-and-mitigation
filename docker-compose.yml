@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # DDoS AI Agent API
+  ddos-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddos-ai-agent
+    ports:
+      - "8000:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./plots:/app/plots
+    command: python app.py
+    restart: unless-stopped
+    networks:
+      - ddos-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Redis (for connection tracking in scalable pipeline)
+  redis:
+    image: redis:7-alpine
+    container_name: ddos-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - ddos-network
+
+  # Optional: PostgreSQL (for alert logging)
+  postgres:
+    image: postgres:15-alpine
+    container_name: ddos-postgres
+    environment:
+      POSTGRES_USER: ddos_user
+      POSTGRES_PASSWORD: secure_password
+      POSTGRES_DB: ddos_alerts
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - ddos-network
+
+networks:
+  ddos-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:
+
+# Usage:
+# docker-compose up                 # Start all services
+# docker-compose up -d              # Start in background
+# docker-compose ps                 # List running services
+# docker-compose logs -f ddos-api   # View logs
+# docker-compose down               # Stop all services
