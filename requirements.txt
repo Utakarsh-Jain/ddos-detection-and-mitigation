@@ -1,0 +1,21 @@
+# ── Core ML ──────────────────────────────────────────────────────────────────
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.4.2
+xgboost==2.0.3
+imbalanced-learn==0.12.3
+
+# ── Visualisation ─────────────────────────────────────────────────────────────
+matplotlib==3.8.4
+seaborn==0.13.2
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+joblib==1.4.2
+tqdm==4.66.4
+pyarrow==16.1.0             # Parquet file support
+
+# ── Scalable Pipeline (optional — needed for scalable_pipeline.py) ────────────
+kafka-python==2.0.2        # Apache Kafka client
+redis==5.0.4               # Redis in-memory connection tracker
+requests==2.32.3           # HTTP client for model serving
+boto3==1.34.100            # AWS Shield / WAF integration

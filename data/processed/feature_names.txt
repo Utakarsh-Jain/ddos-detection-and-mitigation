@@ -1,0 +1,38 @@
+Flow Duration
+Flow Bytes/s
+Flow Packets/s
+Flow IAT Mean
+Flow IAT Std
+Flow IAT Max
+Flow IAT Min
+Total Fwd Packets
+Total Backward Packets
+Fwd Packet Length Mean
+Bwd Packet Length Mean
+Fwd Packet Length Std
+Bwd Packet Length Std
+Fwd IAT Total
+Fwd IAT Mean
+Fwd IAT Std
+Bwd IAT Total
+Bwd IAT Mean
+SYN Flag Count
+ACK Flag Count
+PSH Flag Count
+URG Flag Count
+FIN Flag Count
+RST Flag Count
+Active Mean
+Active Std
+Idle Mean
+Idle Std
+Avg Fwd Segment Size
+Avg Bwd Segment Size
+Subflow Fwd Packets
+Subflow Bwd Packets
+Subflow Fwd Bytes
+Subflow Bwd Bytes
+feat_pkt_rate
+feat_byte_rate
+feat_fwd_bwd_ratio
+feat_flag_density
