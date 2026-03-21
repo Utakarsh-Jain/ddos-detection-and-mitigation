@@ -35,6 +35,13 @@ from datetime import datetime
 
 from mitigation_handler import MitigationHandler
 
+# Add scapy import for live capture
+try:
+    from scapy.all import sniff, IP, TCP, UDP
+    SCAPY_AVAILABLE = True
+except ImportError:
+    SCAPY_AVAILABLE = False
+
 # ─────────────────────────────────────────────────────────────────────────────
 # LOGGING
 # ─────────────────────────────────────────────────────────────────────────────
@@ -64,6 +71,132 @@ ENSEMBLE_WEIGHT_RF  = 0.45   # weight for RF in soft-voting ensemble
 ENSEMBLE_WEIGHT_XGB = 0.55   # XGBoost slightly higher weight (generally better)
 
 SIMULATION_DELAY    = 0.0    # seconds between batches in simulation (0 = max speed)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LIVE CAPTURE FUNCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def extract_basic_features(packets, duration=1.0):
+    """
+    Extract basic flow-like features from captured packets.
+    This is a simplified version - real implementation would need proper flow reconstruction.
+    """
+    if not packets:
+        return None
+
+    # Basic packet statistics
+    packet_count = len(packets)
+    total_bytes = sum(len(pkt) for pkt in packets)
+
+    # Extract IPs and ports
+    src_ips = []
+    dst_ips = []
+    src_ports = []
+    dst_ports = []
+    protocols = []
+
+    for pkt in packets:
+        if IP in pkt:
+            src_ips.append(pkt[IP].src)
+            dst_ips.append(pkt[IP].dst)
+            protocols.append(pkt[IP].proto)
+
+            if TCP in pkt:
+                src_ports.append(pkt[TCP].sport)
+                dst_ports.append(pkt[TCP].dport)
+            elif UDP in pkt:
+                src_ports.append(pkt[UDP].sport)
+                dst_ports.append(pkt[UDP].dport)
+            else:
+                src_ports.append(0)
+                dst_ports.append(0)
+
+    if not src_ips:
+        return None
+
+    # Use most common source IP as "attacker"
+    from collections import Counter
+    most_common_src = Counter(src_ips).most_common(1)[0][0]
+    most_common_dst = Counter(dst_ips).most_common(1)[0][0] if dst_ips else "0.0.0.0"
+    most_common_port = Counter(dst_ports).most_common(1)[0][0] if dst_ports else 0
+
+    # Create a basic flow dictionary with some features
+    flow = {
+        "Flow Duration": int(duration * 1000000),  # microseconds
+        "Flow Bytes/s": total_bytes / duration if duration > 0 else 0,
+        "Flow Packets/s": packet_count / duration if duration > 0 else 0,
+        "Total Fwd Packets": packet_count // 2,  # rough estimate
+        "Total Backward Packets": packet_count - (packet_count // 2),
+        "Total Length of Fwd Packets": total_bytes // 2,
+        "Total Length of Bwd Packets": total_bytes - (total_bytes // 2),
+        "Fwd Packet Length Mean": total_bytes / packet_count / 2 if packet_count > 0 else 0,
+        "Bwd Packet Length Mean": total_bytes / packet_count / 2 if packet_count > 0 else 0,
+        "Flow IAT Mean": duration * 1000000 / packet_count if packet_count > 0 else 0,
+        "Flow IAT Std": 1000,  # dummy value
+        "Flow IAT Max": duration * 1000000,
+        "Flow IAT Min": 0,
+        "Fwd IAT Total": duration * 1000000 / 2,
+        "Fwd IAT Mean": duration * 1000000 / packet_count if packet_count > 0 else 0,
+        "Fwd IAT Std": 1000,
+        "Bwd IAT Total": duration * 1000000 / 2,
+        "Bwd IAT Mean": duration * 1000000 / packet_count if packet_count > 0 else 0,
+        "Bwd IAT Std": 1000,
+        "Fwd PSH Flags": 0,  # dummy
+        "Bwd PSH Flags": 0,
+        "Fwd URG Flags": 0,
+        "Bwd URG Flags": 0,
+        "Fwd Header Length": 20 * (packet_count // 2),  # rough estimate
+        "Bwd Header Length": 20 * (packet_count - packet_count // 2),
+        "Fwd Packets/s": (packet_count // 2) / duration if duration > 0 else 0,
+        "Bwd Packets/s": (packet_count - packet_count // 2) / duration if duration > 0 else 0,
+        "Min Packet Length": 40,  # dummy
+        "Max Packet Length": 1500,  # dummy
+        "Packet Length Mean": total_bytes / packet_count if packet_count > 0 else 0,
+        "Packet Length Std": 100,  # dummy
+        "Packet Length Variance": 10000,  # dummy
+        "FIN Flag Count": 0,
+        "SYN Flag Count": sum(1 for pkt in packets if TCP in pkt and pkt[TCP].flags & 0x02),  # SYN flag
+        "RST Flag Count": 0,
+        "PSH Flag Count": 0,
+        "ACK Flag Count": sum(1 for pkt in packets if TCP in pkt and pkt[TCP].flags & 0x10),  # ACK flag
+        "URG Flag Count": 0,
+        "CWE Flag Count": 0,
+        "ECE Flag Count": 0,
+        "Down/Up Ratio": 1.0,
+        "Average Packet Size": total_bytes / packet_count if packet_count > 0 else 0,
+        "Avg Fwd Segment Size": total_bytes / packet_count / 2 if packet_count > 0 else 0,
+        "Avg Bwd Segment Size": total_bytes / packet_count / 2 if packet_count > 0 else 0,
+        "Fwd Header Length.1": 20 * (packet_count // 2),
+        "Fwd Avg Bytes/Bulk": 0,
+        "Fwd Avg Packets/Bulk": 0,
+        "Fwd Avg Bulk Rate": 0,
+        "Bwd Avg Bytes/Bulk": 0,
+        "Bwd Avg Packets/Bulk": 0,
+        "Bwd Avg Bulk Rate": 0,
+        "Subflow Fwd Packets": packet_count // 4,
+        "Subflow Fwd Bytes": total_bytes // 4,
+        "Subflow Bwd Packets": packet_count // 4,
+        "Subflow Bwd Bytes": total_bytes // 4,
+        "Init_Win_bytes_forward": 65535,  # dummy
+        "Init_Win_bytes_backward": 65535,  # dummy
+        "act_data_pkt_fwd": packet_count // 4,
+        "min_seg_size_forward": 20,
+        "Active Mean": duration * 1000000 / 2,
+        "Active Std": 1000,
+        "Active Max": duration * 1000000,
+        "Active Min": 0,
+        "Idle Mean": 0,
+        "Idle Std": 0,
+        "Idle Max": 0,
+        "Idle Min": 0,
+        "Source IP": most_common_src,
+        "Destination IP": most_common_dst,
+        "Destination Port": most_common_port,
+        "Protocol": protocols[0] if protocols else 6,  # TCP default
+    }
+
+    return flow
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -331,16 +464,31 @@ if __name__ == "__main__":
         agent.run_simulation(args.data, delay=args.delay, max_rows=args.max_rows)
 
     elif args.mode == "live":
-        # ── Live mode skeleton ─────────────────────────────────────────────
-        # In a real deployment, replace this loop with a packet-capture
-        # library such as Scapy or a FireNet callback.
-        log.info("[LIVE MODE] Waiting for traffic flows … (Ctrl+C to stop)")
+        if not SCAPY_AVAILABLE:
+            log.error("Scapy not available. Install with: pip install scapy")
+            sys.exit(1)
+
+        log.info("[LIVE MODE] Starting packet capture… (Ctrl+C to stop)")
+        log.info("Note: This captures basic packet statistics, not full CIC-DDoS2019 features.")
+        log.info("For production, implement proper NetFlow/sFlow collection.")
+
         try:
             while True:
-                # TODO: Replace with actual flow ingestion
-                # flow = firenet_adapter.get_next_flow()
-                # agent.process_flow(flow)
-                time.sleep(1)
+                # Capture packets for 1 second
+                packets = sniff(timeout=1, store=True)
+
+                if packets:
+                    # Extract basic features
+                    flow = extract_basic_features(packets, duration=1.0)
+                    if flow:
+                        log.info(f"Captured {len(packets)} packets from {flow['Source IP']} to {flow['Destination IP']}:{flow['Destination Port']}")
+                        # Process the flow
+                        agent.process_flow(flow)
+                    else:
+                        log.debug(f"Captured {len(packets)} packets but couldn't extract features")
+                else:
+                    log.debug("No packets captured in this interval")
+
         except KeyboardInterrupt:
             log.info("Agent stopped by user.")
             agent._print_summary()
