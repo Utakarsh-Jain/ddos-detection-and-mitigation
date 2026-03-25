@@ -1,13 +1,4 @@
-# DDoS AI Agent 🛡️
-### SRM Institute of Science and Technology
-**Department of Networking and Communications | 21CSP401L – Major Project**
 
-| | |
-|---|---|
-| **Students** | Utkarsh Jaiswal `RA2311030010011` · Utakarsh Jain `RA2311030010054` |
-| **Guide** | Dr. Karthikeyan H, Assistant Professor, Dept. of Networking & Communications |
-
----
 
 ## Innovation
 
