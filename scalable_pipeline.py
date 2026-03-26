@@ -1,11 +1,4 @@
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║       DDoS AI AGENT — EXTREME-SCALE DISTRIBUTED PIPELINE                    ║
-║  SRM Institute of Science and Technology | Dept. Networking & Communications ║
-║  Students : Utkarsh Jaiswal  (RA2311030010011)                               ║
-║             Utakarsh Jain    (RA2311030010054)                               ║
-║  Guide    : Dr. Karthikeyan H, Assistant Professor                           ║
-╚══════════════════════════════════════════════════════════════════════════════╝
 
 Module  : scalable_pipeline.py
 Purpose : Demonstrates the Big-Data / distributed architecture needed to
@@ -63,9 +56,9 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s  [%(levelname)s]  %(message)s")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # 1.  KAFKA PRODUCER ADAPTER
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class KafkaFlowProducer:
     """
@@ -119,9 +112,9 @@ class KafkaFlowProducer:
             self._producer.flush()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # 2.  FLINK-STYLE STREAM CONSUMER  (Python approximation)
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class FlinkStyleConsumer:
     """
@@ -245,9 +238,9 @@ class FlinkStyleConsumer:
         }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # 3.  REDIS CONNECTION TRACKER
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class RedisConnectionTracker:
     """
@@ -289,9 +282,9 @@ class RedisConnectionTracker:
         return self._local.get(src_ip, 0)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # 4.  MODEL SERVING CLIENT  (Triton / Seldon / FastAPI)
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class ModelServingClient:
     """
@@ -356,9 +349,9 @@ class ModelServingClient:
         return int(prob >= 0.60), float(prob)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # 5.  EDGE MITIGATION ROUTER
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class EdgeMitigationRouter:
     """
@@ -408,9 +401,9 @@ class EdgeMitigationRouter:
             log.debug("[AWS-Shield] boto3 not installed — skipped.")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # QUICK DEMO
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 if __name__ == "__main__":
     print("\n" + "═"*60)

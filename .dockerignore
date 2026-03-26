@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+.gitattnibutes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
+htmlcov
+
+# Data (large files)
+data/raw/*.csv
+data/raw/*.parquet
+data/processed/*.npy
+
+# Models (large files)
+models/*.pkl
+models/*.json
+
+# Logs
+logs/*.log
+logs/*.csv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+*.md
+
+# Development
+.env
+.env.local
+docker-compose.override.yml

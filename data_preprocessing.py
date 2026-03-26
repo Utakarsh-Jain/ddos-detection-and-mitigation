@@ -1,12 +1,4 @@
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║           DDoS AI AGENT — DATA PREPROCESSING MODULE                         ║
-║  SRM Institute of Science and Technology | Dept. Networking & Communications ║
-║  Students : Utkarsh Jaiswal  (RA2311030010011)                               ║
-║             Utakarsh Jain    (RA2311030010054)                               ║
-║  Guide    : Dr. Karthikeyan H, Assistant Professor                           ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
 Module  : data_preprocessing.py
 Purpose : Load, clean, engineer features from CIC-DDoS2019 and save processed
           data ready for model training.
@@ -26,11 +18,11 @@ import joblib
 
 warnings.filterwarnings("ignore")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONSTANTS
-# ─────────────────────────────────────────────────────────────────────────────
 
-RAW_DATA_DIR       = "data/raw"
+# CONSTANTS
+
+
+RAW_DATA_DIR       = r"C:\Users\utaka\Downloads\archive (2)"
 PROCESSED_DATA_DIR = "data/processed"
 SCALER_PATH        = "models/scaler.pkl"
 ENCODER_PATH       = "models/label_encoder.pkl"
@@ -95,9 +87,9 @@ SELECTED_FEATURES = [
 TARGET_COLUMN = "Label"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # HELPER FUNCTIONS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def load_raw_data(directory: str) -> pd.DataFrame:
     """
@@ -181,9 +173,6 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     eps = 1e-6  # avoid division by zero
 
-    # ── Rename stripped column names for easy access ────────────────────────
-    col = lambda name: name.strip()
-
     dur   = df.get("Flow Duration",              pd.Series(eps, index=df.index)).clip(lower=eps)
     fwd_p = df.get("Total Fwd Packets",           pd.Series(0,   index=df.index))
     bwd_p = df.get("Total Backward Packets",      pd.Series(0,   index=df.index))
@@ -235,9 +224,9 @@ def select_and_scale(df: pd.DataFrame):
     return X_scaled, y, all_features
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # MAIN PIPELINE
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def run_preprocessing():
     os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)

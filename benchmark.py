@@ -1,12 +1,4 @@
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║       DDoS AI AGENT — SCALABILITY BENCHMARK                                ║
-║  SRM Institute of Science and Technology | Dept. Networking & Communications ║
-║  Students : Utkarsh Jaiswal  (RA2311030010011)                               ║
-║             Utakarsh Jain    (RA2311030010054)                               ║
-║  Guide    : Dr. Karthikeyan H, Assistant Professor                           ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
 Module  : benchmark.py
 Purpose : Measure scalability of the DDoS AI Agent under increasing load.
           Tests throughput at multiple scales (1K → 100K+ flows) and with
@@ -26,6 +18,7 @@ import os
 import sys
 import time
 import argparse
+from typing import Optional, List, Dict
 import numpy as np
 import pandas as pd
 import logging
@@ -44,9 +37,9 @@ log = logging.getLogger("Benchmark")
 os.makedirs("plots", exist_ok=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # SYNTHETIC DATA GENERATOR
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def generate_synthetic_flows(n: int, attack_ratio: float = 0.5) -> pd.DataFrame:
     """
@@ -147,12 +140,12 @@ def generate_synthetic_flows(n: int, attack_ratio: float = 0.5) -> pd.DataFrame:
     return df.sample(frac=1, random_state=42).reset_index(drop=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# BENCHMARK RUNNER
-# ─────────────────────────────────────────────────────────────────────────────
 
-def run_benchmark(flow_counts: list, worker_counts: list,
-                  batch_size: int = 2000, data_path: str = None):
+# BENCHMARK RUNNER
+
+
+def run_benchmark(flow_counts: List[int], worker_counts: List[int],
+                  batch_size: int = 2000, data_path: Optional[str] = None):
     """
     Run throughput benchmarks across different scales and worker counts.
     Returns a dict of results.
@@ -165,6 +158,7 @@ def run_benchmark(flow_counts: list, worker_counts: list,
     for n_flows in flow_counts:
         # Generate or load data
         if data_path:
+            assert isinstance(data_path, str)
             print(f"\n  Loading real data from {data_path} …")
             if data_path.endswith(".parquet"):
                 df = pd.read_parquet(data_path)
@@ -208,7 +202,7 @@ def run_benchmark(flow_counts: list, worker_counts: list,
                 "workers": n_workers,
                 "batch_size": batch_size,
                 "elapsed_s": round(elapsed, 3),
-                "throughput_fps": round(fps, 0),
+                "throughput_fps": int(round(fps)),
                 "attacks": attacks,
             })
 
@@ -220,7 +214,7 @@ def run_benchmark(flow_counts: list, worker_counts: list,
     return results
 
 
-def print_results_table(results: list):
+def print_results_table(results: List[Dict]):
     """Print a formatted results table."""
     print(f"\n{'═'*75}")
     print(f"  SCALABILITY BENCHMARK RESULTS")
@@ -251,7 +245,7 @@ def print_results_table(results: list):
                   f"({s['workers']} → {m['workers']} workers)")
 
 
-def plot_results(results: list):
+def plot_results(results: List[Dict]):
     """Generate a performance chart."""
     df = pd.DataFrame(results)
 
@@ -299,9 +293,9 @@ def plot_results(results: list):
     print(f"\n  📊 Benchmark chart saved → {path}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # MAIN
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="DDoS AI Agent — Scalability Benchmark")

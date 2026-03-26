@@ -1,15 +1,8 @@
-"""
-╔══════════════════════════════════════════════════════════════════════════════╗
-║           DDoS AI AGENT — CONFIGURATION MODULE                              ║
-║  Centralized settings for all hyperparameters and thresholds                 ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-"""
-
 import os
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # PATHS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
@@ -35,18 +28,18 @@ AGENT_LOG_PATH = os.path.join(LOGS_DIR, "agent.log")
 MITIGATION_LOG_PATH = os.path.join(LOGS_DIR, "mitigation.log")
 ALERTS_CSV_PATH = os.path.join(LOGS_DIR, "alerts.csv")
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # DATA PREPROCESSING
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 # Test / Train split
 TEST_SIZE = 0.20
 RANDOM_STATE = 42
 STRATIFY = True
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # RANDOM FOREST HYPERPARAMETERS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 RF_CONFIG = {
     "n_estimators": 200,           # Number of trees
@@ -59,9 +52,9 @@ RF_CONFIG = {
     "random_state": RANDOM_STATE,
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # XGBOOST HYPERPARAMETERS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 XGBOOST_CONFIG = {
     "n_estimators": 300,
@@ -76,9 +69,7 @@ XGBOOST_CONFIG = {
     "random_state": RANDOM_STATE,
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
 # DETECTION & MITIGATION THRESHOLDS
-# ─────────────────────────────────────────────────────────────────────────────
 
 # Ensemble detection threshold (confidence above which flow is flagged as attack)
 DETECTION_THRESHOLD = 0.60
@@ -98,9 +89,9 @@ ALERT_THRESHOLD = 3
 # Block expiry time (seconds)
 BLOCK_EXPIRY = 300  # 5 minutes
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # SIMULATION & LIVE CAPTURE
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 # Simulation delay between flows (seconds)
 SIMULATION_DELAY = 0.0
@@ -111,9 +102,9 @@ SIMULATION_BATCH_SIZE = 5000
 # Live capture timeout (seconds)
 LIVE_CAPTURE_TIMEOUT = 1
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # PLOTTING & VISUALIZATION
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 # Plot DPI (dots per inch)
 PLOT_DPI = 150
@@ -127,31 +118,31 @@ FIGSIZE_ROC_CURVE = (6, 5)
 FIGSIZE_FEATURE_IMPORTANCE = (10, 6)
 FIGSIZE_MODEL_COMPARISON = (10, 6)
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # CROSS-VALIDATION
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 CV_FOLDS = 5  # 5-fold stratified cross-validation
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # LOGGING
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 LOG_LEVEL = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 LOG_FORMAT = "%(asctime)s  [%(levelname)s]  %(message)s"
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # FASTAPI / REST API
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 API_HOST = "0.0.0.0"
 API_PORT = 8000
 API_DEBUG = True
 API_RELOAD = True
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # SCALABLE PIPELINE (Kafka + Flink + Redis)
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 KAFKA_BOOTSTRAP_SERVERS = ["localhost:9092"]
 KAFKA_TOPIC = "network-flows"
@@ -166,7 +157,7 @@ FLINK_PARALLELISM = 8
 
 # ─────────────────────────────────────────────────────────────────────————————
 # DISPLAY/DEBUG
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 # Print detailed metrics during training
 VERBOSE = True

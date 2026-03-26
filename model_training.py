@@ -38,9 +38,9 @@ from sklearn.metrics          import (accuracy_score, precision_score, recall_sc
 import xgboost as xgb
 import joblib
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # PATHS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 PROCESSED_DIR = "data/processed"
 MODELS_DIR    = "models"
@@ -50,9 +50,9 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(PLOTS_DIR,  exist_ok=True)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # EVALUATION HELPER
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def evaluate_model(name: str, model, X_test: np.ndarray, y_test: np.ndarray):
     """
@@ -149,9 +149,9 @@ def compare_models(results: dict):
     print(f"\n[✓] Model comparison chart → {path}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # TRAINING PIPELINES
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def train_random_forest(X_train, y_train):
     """
@@ -206,9 +206,9 @@ def train_xgboost(X_train, y_train):
     return xgb_model
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # MAIN
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def run_training():
     # ── Load preprocessed data ──────────────────────────────────────────────
