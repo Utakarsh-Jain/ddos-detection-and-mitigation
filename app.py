@@ -1,9 +1,4 @@
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║       DDoS AI AGENT — FastAPI REST API                                      ║
-║  Microservice interface for DDoS detection                                  ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
 Usage:
     python app.py
     
@@ -38,9 +33,9 @@ except Exception as e:
     AGENT_AVAILABLE = False
     print(f"⚠️  Warning: Agent not available ({e}). API will run in demo mode.")
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # LOGGING
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,9 +43,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("FastAPI")
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # FASTAPI APP
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 app = FastAPI(
     title="DDoS AI Agent API",
@@ -78,9 +73,9 @@ async def startup_event():
             agent = None
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # PYDANTIC MODELS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class NetworkFlow(BaseModel):
     """Network flow for DDoS detection."""
@@ -146,9 +141,9 @@ class ErrorResponse(BaseModel):
     timestamp: str = Field(..., description="Error timestamp")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # API ENDPOINTS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 @app.get("/", tags=["Root"])
 async def root():
@@ -317,9 +312,9 @@ async def get_stats():
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # ERROR HANDLERS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
@@ -335,9 +330,9 @@ async def general_exception_handler(request, exc):
     )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # MAIN
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 if __name__ == "__main__":
     import uvicorn

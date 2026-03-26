@@ -1,12 +1,4 @@
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║           DDoS AI AGENT — CORE AGENT MODULE                                 ║
-║  SRM Institute of Science and Technology | Dept. Networking & Communications ║
-║  Students : Utkarsh Jaiswal  (RA2311030010011)                               ║
-║             Utakarsh Jain    (RA2311030010054)                               ║
-║  Guide    : Dr. Karthikeyan H, Assistant Professor                           ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
 Module  : agent_core.py
 Purpose : Main agent loop.
           1. Loads trained ML models (RF + XGBoost).
@@ -27,6 +19,7 @@ import sys
 import time
 import argparse
 import logging
+from typing import Optional, Tuple
 import numpy as np
 import pandas as pd
 import joblib
@@ -42,9 +35,9 @@ try:
 except ImportError:
     SCAPY_AVAILABLE = False
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # LOGGING
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
@@ -57,9 +50,9 @@ logging.basicConfig(
 )
 log = logging.getLogger("AgentCore")
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # PATHS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 RF_MODEL_PATH   = "models/rf_model.pkl"
 XGB_MODEL_PATH  = "models/xgb_model.json"
@@ -73,9 +66,9 @@ ENSEMBLE_WEIGHT_XGB = 0.55   # XGBoost slightly higher weight (generally better)
 SIMULATION_DELAY    = 0.0    # seconds between batches in simulation (0 = max speed)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # LIVE CAPTURE FUNCTIONS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def extract_basic_features(packets, duration=1.0):
     """
@@ -86,8 +79,8 @@ def extract_basic_features(packets, duration=1.0):
         return None
 
     # Basic packet statistics
-    packet_count = len(packets)
-    total_bytes = sum(len(pkt) for pkt in packets)
+    packet_count: int = len(packets)
+    total_bytes: int = int(sum(len(pkt) for pkt in packets))
 
     # Extract IPs and ports
     src_ips = []
@@ -199,9 +192,9 @@ def extract_basic_features(packets, duration=1.0):
     return flow
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # DETECTOR CLASS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class DDoSDetector:
     """
@@ -230,7 +223,7 @@ class DDoSDetector:
         vec = np.array(row, dtype=np.float32).reshape(1, -1)
         return self.scaler.transform(vec)
 
-    def predict(self, flow: dict) -> tuple[int, float, float, float]:
+    def predict(self, flow: dict) -> Tuple[int, float, float, float]:
         """
         Returns (prediction, ensemble_prob, rf_prob, xgb_prob).
           prediction = 1 → ATTACK, 0 → BENIGN
@@ -273,9 +266,9 @@ class DDoSDetector:
         return df_copy
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # AGENT LOOP
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class DDoSAgent:
     """
@@ -332,7 +325,7 @@ class DDoSAgent:
     # ── FireNet / CSV Simulation mode ─────────────────────────────────────────
 
     def run_simulation(self, data_path: str, delay: float = SIMULATION_DELAY,
-                       max_rows: int = None, batch_size: int = 5000):
+                       max_rows: Optional[int] = None, batch_size: int = 5000):
         """
         Replay a traffic CSV/Parquet file using fast batch processing.
 
@@ -428,9 +421,9 @@ class DDoSAgent:
         print("═"*55)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # CLI ENTRY POINT
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def parse_args():
     p = argparse.ArgumentParser(description="DDoS AI Agent — SRM Major Project")

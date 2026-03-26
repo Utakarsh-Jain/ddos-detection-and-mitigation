@@ -1,4 +1,4 @@
-.PHONY: help install train test test-coverage lint format clean run-api run-live run-simulate docker-build docker-up docker-down
+.PHONY: help install train test test-coverage lint format clean run-api run-live run-simulate docker-check docker-build docker-up docker-down docker-logs docker-rebuild
 
 # Colors for terminal output
 CYAN := \033[0;36m
@@ -24,10 +24,12 @@ help:
 	@echo "  make run-simulate     Run simulation on sample data"
 	@echo ""
 	@echo "$(GREEN)Docker:$(NC)"
+	@echo "  make docker-check     Check Docker & dependencies"
 	@echo "  make docker-build     Build Docker image"
 	@echo "  make docker-up        Start services with docker-compose"
 	@echo "  make docker-down      Stop docker-compose services"
 	@echo "  make docker-logs      View docker-compose logs"
+	@echo "  make docker-rebuild   Rebuild and restart everything"
 	@echo ""
 
 install:

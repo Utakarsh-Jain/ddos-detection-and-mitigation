@@ -1,12 +1,4 @@
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║       DDoS AI AGENT — ASYNC STREAMING AGENT                                ║
-║  SRM Institute of Science and Technology | Dept. Networking & Communications ║
-║  Students : Utkarsh Jaiswal  (RA2311030010011)                               ║
-║             Utakarsh Jain    (RA2311030010054)                               ║
-║  Guide    : Dr. Karthikeyan H, Assistant Professor                           ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
 Module  : streaming_agent.py
 Purpose : Production-grade streaming DDoS detection agent with:
           • Async queue-based flow ingestion (simulates Kafka consumer)
@@ -58,11 +50,7 @@ from datetime import datetime
 from collections import defaultdict
 
 from mitigation_handler import MitigationHandler
-
-# ─────────────────────────────────────────────────────────────────────────────
-# LOGGING
-# ─────────────────────────────────────────────────────────────────────────────
-
+# LOGGING SETUP
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -74,9 +62,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("StreamingAgent")
 
-# ─────────────────────────────────────────────────────────────────────────────
 # PATHS & CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
 
 RF_MODEL_PATH   = "models/rf_model.pkl"
 XGB_MODEL_PATH  = "models/xgb_model.json"
@@ -87,11 +73,7 @@ DETECTION_THRESHOLD = 0.60
 ENSEMBLE_WEIGHT_RF  = 0.45
 ENSEMBLE_WEIGHT_XGB = 0.55
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 # THREAD-SAFE DETECTOR (one per worker thread)
-# ─────────────────────────────────────────────────────────────────────────────
-
 class ThreadSafeDetector:
     """
     Each worker thread gets its own detector instance to avoid GIL contention
@@ -145,11 +127,7 @@ class ThreadSafeDetector:
         df_copy["pred"]          = (ensemble >= DETECTION_THRESHOLD).astype(int)
         return df_copy
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 # STREAMING AGENT
-# ─────────────────────────────────────────────────────────────────────────────
-
 class StreamingDDoSAgent:
     """
     High-throughput streaming agent with multi-threaded worker pool.
@@ -338,10 +316,7 @@ class StreamingDDoSAgent:
     def shutdown(self):
         self._executor.shutdown(wait=True)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 # CLI
-# ─────────────────────────────────────────────────────────────────────────────
 
 def parse_args():
     p = argparse.ArgumentParser(

@@ -13,6 +13,7 @@ services:
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
     volumes:
       - ./data:/app/data
       - ./models:/app/models
@@ -22,6 +23,13 @@ services:
     restart: unless-stopped
     networks:
       - ddos-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          memory: 1G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -41,6 +49,11 @@ services:
     restart: unless-stopped
     networks:
       - ddos-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Optional: PostgreSQL (for alert logging)
   postgres:
@@ -57,6 +70,11 @@ services:
     restart: unless-stopped
     networks:
       - ddos-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ddos_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   ddos-network:
@@ -72,3 +90,9 @@ volumes:
 # docker-compose ps                 # List running services
 # docker-compose logs -f ddos-api   # View logs
 # docker-compose down               # Stop all services
+#
+# Troubleshooting:
+# docker-compose build --no-cache   # Rebuild without cache
+# docker system prune               # Clean up unused resources
+# docker-compose down -v            # Stop and remove volumes
+

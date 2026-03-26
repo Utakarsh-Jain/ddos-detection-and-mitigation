@@ -1,11 +1,4 @@
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║           DDoS AI AGENT — MITIGATION HANDLER MODULE                         ║
-║  SRM Institute of Science and Technology | Dept. Networking & Communications ║
-║  Students : Utkarsh Jaiswal  (RA2311030010011)                               ║
-║             Utakarsh Jain    (RA2311030010054)                               ║
-║  Guide    : Dr. Karthikeyan H, Assistant Professor                           ║
-╚══════════════════════════════════════════════════════════════════════════════╝
 
 Module  : mitigation_handler.py
 Purpose : Real-time automated mitigation — block malicious IPs / ports when
@@ -30,11 +23,11 @@ import threading
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Dict, Optional
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # LOGGING SETUP
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
@@ -48,9 +41,9 @@ logging.basicConfig(
 log = logging.getLogger("MitigationHandler")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 DRY_RUN         = True    # Set False on a real Linux host with root
 BLOCK_DURATION  = 300     # seconds an IP stays blocked (5 minutes)
@@ -59,9 +52,9 @@ ALERT_THRESHOLD = 3       # consecutive detections before hard block
 RATE_LIMIT_KBPS = 512     # kb/s rate-limit before full block
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # DATA CLASSES
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 @dataclass
 class ThreatRecord:
@@ -74,9 +67,9 @@ class ThreatRecord:
     unblocked   : bool = False
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # MAIN CLASS
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class MitigationHandler:
     """
@@ -96,10 +89,10 @@ class MitigationHandler:
         self._lock         = threading.Lock()
 
         # { ip: ThreatRecord }
-        self._blocked_ips  : dict[str, ThreatRecord] = {}
+        self._blocked_ips  : Dict[str, ThreatRecord] = {}
 
         # { ip: deque of detection timestamps } — for consecutive-hit tracking
-        self._alert_history: dict[str, deque] = defaultdict(
+        self._alert_history: Dict[str, deque] = defaultdict(
             lambda: deque(maxlen=ALERT_THRESHOLD)
         )
 
@@ -133,23 +126,30 @@ class MitigationHandler:
           confidence ≥ 0.95  →  immediate hard block
           confidence ≥ 0.80  →  rate-limit; hard block after ALERT_THRESHOLD hits
           confidence ≥ 0.60  →  log only
+
+        NOTE: Only real IPs are actioned. Dummy/fallback IPs are skipped.
         """
+        # ── Reject dummy / invalid IPs ────────────────────────────────────
+        INVALID_IPS = {"0.0.0.0", "127.0.0.1", "unknown", "none", "nan", ""}
+        if not src_ip or src_ip.strip().lower() in INVALID_IPS:
+            log.debug(f"[SKIP] Ignoring dummy IP: '{src_ip}'")
+            return
+
         with self._lock:
             self._stats["total_alerts"] += 1
             self._log_alert(src_ip, dst_port, confidence, model_name)
 
-            # ── Already hard-blocked? Refresh expiry ─────────────────────
             if src_ip in self._blocked_ips and not self._blocked_ips[src_ip].unblocked:
                 record = self._blocked_ips[src_ip]
                 record.expires_at = datetime.utcnow() + timedelta(seconds=BLOCK_DURATION)
                 log.info(f"[RENEW]  {src_ip} — block timer refreshed.")
                 return
 
-            # ── Track alert history ───────────────────────────────────────
+            # Track alert history
             self._alert_history[src_ip].append(datetime.utcnow())
             consecutive_hits = len(self._alert_history[src_ip])
 
-            # ── Mitigation decision ───────────────────────────────────────
+            # Mitigation decision
             if confidence >= 0.95 or consecutive_hits >= ALERT_THRESHOLD:
                 self._block_ip(src_ip, dst_port, confidence)
                 if dst_port:
@@ -172,12 +172,8 @@ class MitigationHandler:
 
     def get_blocklist(self) -> list[str]:
         with self._lock:
-            return [ip for ip, r in self._blocked_ips.items() if not r.unblocked]
-
-    # ─────────────────────────────────────────────────────────────────────────
+            return [ip for ip, r in self._blocked_ips.items() if not r.unblocked]    
     # INTERNAL ACTIONS
-    # ─────────────────────────────────────────────────────────────────────────
-
     def _block_ip(self, ip: str, port: Optional[int], confidence: float):
         cmd = f"iptables -I INPUT -s {ip} -j DROP"
         self._run_cmd(cmd, label=f"BLOCK_IP  {ip}")
@@ -234,9 +230,7 @@ class MitigationHandler:
             f.write(f"{datetime.utcnow().isoformat()},{ip},{port},"
                     f"{confidence:.4f},{model}\n")
 
-    # ─────────────────────────────────────────────────────────────────────────
     # SYSTEM COMMAND RUNNER
-    # ─────────────────────────────────────────────────────────────────────────
 
     def _run_cmd(self, cmd: str, label: str):
         if self.dry_run:
@@ -253,9 +247,7 @@ class MitigationHandler:
         except Exception as e:
             log.error(f"[CMD ERROR] {label}: {e}")
 
-    # ─────────────────────────────────────────────────────────────────────────
     # CLEANUP THREAD — auto-unblocks expired IPs every 60 seconds
-    # ─────────────────────────────────────────────────────────────────────────
 
     def _cleanup_loop(self):
         while True:
@@ -264,16 +256,13 @@ class MitigationHandler:
             with self._lock:
                 expired = [
                     ip for ip, r in self._blocked_ips.items()
-                    if r.expires_at and now >= r.expires_at and not r.unblocked
+                    if r.expires_at is not None and now >= r.expires_at and not r.unblocked
                 ]
                 for ip in expired:
                     log.info(f"[EXPIRE]  Auto-unblocking {ip}")
                     self._unblock_ip(ip)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 # QUICK TEST
-# ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     handler = MitigationHandler(dry_run=True)
