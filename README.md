@@ -162,7 +162,7 @@ Network Edge → Apache Kafka (64 partitions)
 ## Tech Stack
 
 ```
-Python 3.11+     scikit-learn 1.4    xgboost 2.0
+Python 3.12+     scikit-learn 1.4    xgboost 2.0
 pandas 2.2       numpy 1.26          matplotlib / seaborn
 joblib           kafka-python        redis-py    (scalable pipeline)
 boto3            iptables            Apache Flink (production)
