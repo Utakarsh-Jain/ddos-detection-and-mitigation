@@ -108,11 +108,11 @@ python scalable_pipeline.py
 
 | Metric | Random Forest | XGBoost |
 |---|---|---|
-| Accuracy | ~99.2% | ~99.5% |
-| Precision | ~99.1% | ~99.4% |
-| Recall | ~99.0% | ~99.3% |
-| F1-Score | ~99.0% | ~99.3% |
-| ROC-AUC | ~0.999 | ~0.999 |
+| Accuracy | ~99.7% | ~99.8% |
+| Precision | ~99.98% | ~99.99% |
+| Recall | ~99.63% | ~99.84% |
+| F1-Score | ~99.80% | ~99.91% |
+| ROC-AUC | ~0.999 | ~1 |
 
 ---
 
