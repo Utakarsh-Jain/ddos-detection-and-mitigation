@@ -20,6 +20,7 @@ import time
 import logging
 import subprocess
 import threading
+import ipaddress
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
@@ -135,9 +136,26 @@ class MitigationHandler:
             log.debug(f"[SKIP] Ignoring dummy IP: '{src_ip}'")
             return
 
+        # Validate IP/port values before building system commands.
+        if not self._is_valid_ip(src_ip):
+            log.warning(f"[SKIP] Invalid source IP: '{src_ip}'")
+            return
+        if dst_port is not None:
+            try:
+                dst_port = int(dst_port)
+                if not (0 < dst_port <= 65535):
+                    raise ValueError("port out of range")
+            except (TypeError, ValueError):
+                log.warning(f"[SKIP] Invalid destination port '{dst_port}' for {src_ip}")
+                dst_port = None
+
         with self._lock:
             self._stats["total_alerts"] += 1
             self._log_alert(src_ip, dst_port, confidence, model_name)
+
+            active_blocks = sum(1 for r in self._blocked_ips.values() if not r.unblocked)
+            if src_ip not in self._blocked_ips and active_blocks >= MAX_BLOCKED_IPS:
+                self._evict_oldest_blocked()
 
             if src_ip in self._blocked_ips and not self._blocked_ips[src_ip].unblocked:
                 record = self._blocked_ips[src_ip]
@@ -173,9 +191,25 @@ class MitigationHandler:
     def get_blocklist(self) -> list[str]:
         with self._lock:
             return [ip for ip, r in self._blocked_ips.items() if not r.unblocked]    
+
+    def _is_valid_ip(self, value: str) -> bool:
+        try:
+            ipaddress.ip_address(value)
+            return True
+        except ValueError:
+            return False
+
+    def _evict_oldest_blocked(self):
+        active = [(ip, record) for ip, record in self._blocked_ips.items() if not record.unblocked]
+        if not active:
+            return
+        oldest_ip, _ = min(active, key=lambda item: item[1].timestamp)
+        log.warning(f"[EVICT] Blocklist cap reached ({MAX_BLOCKED_IPS}). Evicting {oldest_ip}")
+        self._unblock_ip(oldest_ip)
+
     # INTERNAL ACTIONS
     def _block_ip(self, ip: str, port: Optional[int], confidence: float):
-        cmd = f"iptables -I INPUT -s {ip} -j DROP"
+        cmd = ["iptables", "-I", "INPUT", "-s", ip, "-j", "DROP"]
         self._run_cmd(cmd, label=f"BLOCK_IP  {ip}")
 
         record = ThreatRecord(
@@ -195,27 +229,52 @@ class MitigationHandler:
         Use iptables hashlimit to cap bandwidth from a suspicious IP.
         Falls back to a log entry in dry-run mode.
         """
-        cmd = (f"iptables -I INPUT -s {ip} -m hashlimit "
-               f"--hashlimit-above {RATE_LIMIT_KBPS}kb/s "
-               f"--hashlimit-mode srcip --hashlimit-name ddos_limit "
-               f"-j DROP")
+        cmd = [
+            "iptables", "-I", "INPUT", "-s", ip,
+            "-m", "hashlimit",
+            "--hashlimit-above", f"{RATE_LIMIT_KBPS}kb/s",
+            "--hashlimit-mode", "srcip",
+            "--hashlimit-name", "ddos_limit",
+            "-j", "DROP",
+        ]
         self._run_cmd(cmd, label=f"RATE_LIMIT {ip}")
         log.warning(f"[RATE-LIMIT]  {ip}  conf={confidence:.2f}  "
                     f"limit={RATE_LIMIT_KBPS}kbps")
 
     def _block_port(self, ip: str, port: int):
-        cmd = f"iptables -I INPUT -s {ip} --dport {port} -j DROP"
-        self._run_cmd(cmd, label=f"BLOCK_PORT {ip}:{port}")
+        for proto in ("tcp", "udp"):
+            cmd = [
+                "iptables", "-I", "INPUT", "-p", proto,
+                "-s", ip,
+                "--dport", str(port),
+                "-j", "DROP",
+            ]
+            self._run_cmd(cmd, label=f"BLOCK_PORT {proto.upper()} {ip}:{port}")
         self._stats["ports_blocked"] += 1
         log.warning(f"[PORT-BLOCK]  {ip}:{port}")
 
     def _unblock_ip(self, ip: str):
         if ip not in self._blocked_ips:
             return
-        cmd = f"iptables -D INPUT -s {ip} -j DROP"
+        record = self._blocked_ips[ip]
+
+        # Remove protocol-specific port rules if they were added for this IP.
+        if record.port is not None:
+            for proto in ("tcp", "udp"):
+                port_cmd = [
+                    "iptables", "-D", "INPUT", "-p", proto,
+                    "-s", ip,
+                    "--dport", str(record.port),
+                    "-j", "DROP",
+                ]
+                self._run_cmd(port_cmd, label=f"UNBLOCK_PORT {proto.upper()} {ip}:{record.port}")
+
+        cmd = ["iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"]
         self._run_cmd(cmd, label=f"UNBLOCK_IP {ip}")
-        self._blocked_ips[ip].unblocked = True
+        record.unblocked = True
         self._stats["ips_unblocked"] += 1
+        self._alert_history.pop(ip, None)
+        self._blocked_ips.pop(ip, None)
         log.info(f"[UNBLOCKED]  {ip}")
 
     def _log_alert(self, ip: str, port: Optional[int],
@@ -232,13 +291,14 @@ class MitigationHandler:
 
     # SYSTEM COMMAND RUNNER
 
-    def _run_cmd(self, cmd: str, label: str):
+    def _run_cmd(self, cmd: list[str], label: str):
+        rendered_cmd = " ".join(cmd)
         if self.dry_run:
-            log.info(f"[DRY-RUN] Would execute: {cmd}")
+            log.info(f"[DRY-RUN] Would execute: {rendered_cmd}")
             return
         try:
             result = subprocess.run(
-                cmd, shell=True, capture_output=True, text=True, timeout=5
+                cmd, shell=False, capture_output=True, text=True, timeout=5
             )
             if result.returncode != 0:
                 log.error(f"[CMD FAILED] {label}: {result.stderr.strip()}")

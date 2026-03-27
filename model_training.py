@@ -25,6 +25,7 @@ import seaborn as sns
 
 from sklearn.model_selection  import train_test_split, StratifiedKFold, cross_val_score
 from sklearn.ensemble         import RandomForestClassifier
+from sklearn.preprocessing    import StandardScaler
 from sklearn.metrics          import (accuracy_score, precision_score, recall_score,
                                       f1_score, roc_auc_score, confusion_matrix,
                                       classification_report, RocCurveDisplay,
@@ -39,6 +40,7 @@ import joblib
 PROCESSED_DIR = "data/processed"
 MODELS_DIR    = "models"
 PLOTS_DIR     = "plots"
+SCALER_PATH   = os.path.join(MODELS_DIR, "scaler.pkl")
 
 os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(PLOTS_DIR,  exist_ok=True)
@@ -338,32 +340,39 @@ def run_training():
     print(f"\n  Train samples : {len(X_train)}")
     print(f"  Test  samples : {len(X_test)}")
 
+    # Fit scaler only on training data to avoid test-set leakage.
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    joblib.dump(scaler, SCALER_PATH)
+    print(f"  [✓] Scaler saved → {SCALER_PATH}")
+
     results = {}
 
     # ── Random Forest ────────────────────────────────────────────────────────
-    rf_model = train_random_forest(X_train, y_train)
-    results["Random Forest"] = evaluate_model("Random Forest", rf_model, X_test, y_test)
+    rf_model = train_random_forest(X_train_scaled, y_train)
+    results["Random Forest"] = evaluate_model("Random Forest", rf_model, X_test_scaled, y_test)
     plot_feature_importance("Random Forest", rf_model, feature_names)
-    plot_predicted_vs_actual("Random Forest", rf_model, X_test, y_test)
-    plot_precision_recall_curve("Random Forest", rf_model, X_test, y_test)
-    plot_prediction_distribution("Random Forest", rf_model, X_test, y_test)
+    plot_predicted_vs_actual("Random Forest", rf_model, X_test_scaled, y_test)
+    plot_precision_recall_curve("Random Forest", rf_model, X_test_scaled, y_test)
+    plot_prediction_distribution("Random Forest", rf_model, X_test_scaled, y_test)
 
     rf_path = os.path.join(MODELS_DIR, "rf_model.pkl")
     joblib.dump(rf_model, rf_path)
     print(f"  [✓] Model saved → {rf_path}")
 
     # Optional: 5-fold CV score
-    cv_rf = cross_val_score(rf_model, X_train, y_train,
+    cv_rf = cross_val_score(rf_model, X_train_scaled, y_train,
                             cv=StratifiedKFold(5), scoring="f1", n_jobs=-1)
     print(f"  5-Fold CV F1 : {cv_rf.mean():.4f} ± {cv_rf.std():.4f}")
 
     # ── XGBoost ──────────────────────────────────────────────────────────────
-    xgb_model = train_xgboost(X_train, y_train)
-    results["XGBoost"] = evaluate_model("XGBoost", xgb_model, X_test, y_test)
+    xgb_model = train_xgboost(X_train_scaled, y_train)
+    results["XGBoost"] = evaluate_model("XGBoost", xgb_model, X_test_scaled, y_test)
     plot_feature_importance("XGBoost", xgb_model, feature_names)
-    plot_predicted_vs_actual("XGBoost", xgb_model, X_test, y_test)
-    plot_precision_recall_curve("XGBoost", xgb_model, X_test, y_test)
-    plot_prediction_distribution("XGBoost", xgb_model, X_test, y_test)
+    plot_predicted_vs_actual("XGBoost", xgb_model, X_test_scaled, y_test)
+    plot_precision_recall_curve("XGBoost", xgb_model, X_test_scaled, y_test)
+    plot_prediction_distribution("XGBoost", xgb_model, X_test_scaled, y_test)
 
     xgb_path = os.path.join(MODELS_DIR, "xgb_model.json")
     xgb_model.save_model(xgb_path)

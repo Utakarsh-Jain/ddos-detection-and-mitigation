@@ -9,20 +9,19 @@ Usage:
 import os
 import sys
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-import numpy as np
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import (
-    API_HOST, API_PORT, API_DEBUG, API_RELOAD,
-    DETECTION_THRESHOLD, AGENT_LOG_PATH
+    API_HOST, API_PORT, API_RELOAD,
+    DETECTION_THRESHOLD, DRY_RUN
 )
 
 # Conditional import (graceful degradation if agent not available)
@@ -31,7 +30,7 @@ try:
     AGENT_AVAILABLE = True
 except Exception as e:
     AGENT_AVAILABLE = False
-    print(f"⚠️  Warning: Agent not available ({e}). API will run in demo mode.")
+    print(f"[WARN] Agent not available ({e}). API will run in demo mode.")
 
 
 # LOGGING
@@ -65,11 +64,11 @@ async def startup_event():
     global agent
     if AGENT_AVAILABLE:
         try:
-            logger.info("🚀 Loading DDoS Agent …")
-            agent = DDoSAgent(dry_run=True)  # Use dry-run by default
-            logger.info("✅ DDoS Agent loaded successfully")
+            logger.info("Loading DDoS Agent...")
+            agent = DDoSAgent(dry_run=DRY_RUN)
+            logger.info("DDoS Agent loaded successfully")
         except Exception as e:
-            logger.error(f"❌ Failed to load agent: {e}")
+            logger.error(f"Failed to load agent: {e}")
             agent = None
 
 
@@ -224,9 +223,17 @@ async def detect_ddos(flow: NetworkFlow):
         pred, conf, rf_score, xgb_score = agent.detector.predict(flow_dict)
         
         is_attack = pred == 1 and conf >= DETECTION_THRESHOLD
+
+        if is_attack:
+            agent.mitigator.handle_alert(
+                src_ip=flow.source_ip,
+                dst_port=flow.destination_port,
+                confidence=float(conf),
+                model_name="Ensemble(RF+XGB)",
+            )
         
         logger.info(
-            f"[DETECT] {flow.source_ip} → {flow.destination_ip}:{flow.destination_port} "
+            f"[DETECT] {flow.source_ip} -> {flow.destination_ip}:{flow.destination_port} "
             f"| Attack: {is_attack} | Conf: {conf:.4f}"
         )
         
@@ -243,7 +250,7 @@ async def detect_ddos(flow: NetworkFlow):
         logger.error(f"Detection error: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Detection failed: {str(e)}"
+            detail="Detection failed"
         )
 
 
@@ -282,6 +289,14 @@ async def detect_batch(flows: List[NetworkFlow]):
             
             pred, conf, rf_score, xgb_score = agent.detector.predict(flow_dict)
             is_attack = pred == 1 and conf >= DETECTION_THRESHOLD
+
+            if is_attack:
+                agent.mitigator.handle_alert(
+                    src_ip=flow.source_ip,
+                    dst_port=flow.destination_port,
+                    confidence=float(conf),
+                    model_name="Ensemble(RF+XGB)",
+                )
             
             results.append({
                 "source_ip": flow.source_ip,
@@ -324,7 +339,7 @@ async def general_exception_handler(request, exc):
         status_code=500,
         content={
             "error": "Internal server error",
-            "detail": str(exc),
+            "detail": "An unexpected error occurred",
             "timestamp": datetime.now().isoformat(),
         },
     )
@@ -337,8 +352,8 @@ async def general_exception_handler(request, exc):
 if __name__ == "__main__":
     import uvicorn
     
-    logger.info(f"🚀 Starting DDoS AI Agent API on {API_HOST}:{API_PORT}")
-    logger.info("📚 Docs available at: http://localhost:8000/docs")
+    logger.info(f"Starting DDoS AI Agent API on {API_HOST}:{API_PORT}")
+    logger.info("Docs available at: http://localhost:8000/docs")
     
     uvicorn.run(
         app,

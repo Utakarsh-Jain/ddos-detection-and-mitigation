@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     gfortran \
+    iptables \
+    iproute2 \
     libopenblas-dev \
     liblapack-dev \
     libgomp1 \

@@ -1,0 +1,16 @@
+{
+  "dataset": "data/raw/UDP-testing.parquet",
+  "sample_size_total": 4000,
+  "sample_size_per_class": 2000,
+  "accuracy": 0.99975,
+  "precision_attack": 1.0,
+  "recall_attack": 0.9995,
+  "f1_attack": 0.9997499374843711,
+  "confusion_matrix": {
+    "tn": 2000,
+    "fp": 0,
+    "fn": 1,
+    "tp": 1999
+  },
+  "classification_report": "              precision    recall  f1-score   support\n\n           0     0.9995    1.0000    0.9998      2000\n           1     1.0000    0.9995    0.9997      2000\n\n    accuracy                         0.9998      4000\n   macro avg     0.9998    0.9998    0.9997      4000\nweighted avg     0.9998    0.9998    0.9997      4000\n"
+}

@@ -163,4 +163,4 @@ FLINK_PARALLELISM = 8
 VERBOSE = True
 
 # Use dry-run mode for mitigation (log only, don't execute iptables)
-DRY_RUN = True
+DRY_RUN = os.getenv("DRY_RUN", "true").strip().lower() in {"1", "true", "yes", "on"}

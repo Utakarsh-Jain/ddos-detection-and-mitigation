@@ -1,0 +1,54 @@
+{
+  "dataset": "data/raw/UDP-testing.parquet",
+  "sample_size_total": 400,
+  "sample_size_per_class": 200,
+  "injected_source_ip": true,
+  "injected_destination_port": true,
+  "model_metrics": {
+    "random_forest": {
+      "accuracy": 0.9975,
+      "precision_attack": 1.0,
+      "recall_attack": 0.995,
+      "f1_attack": 0.9974937343358395,
+      "confusion_matrix": {
+        "tn": 200,
+        "fp": 0,
+        "fn": 1,
+        "tp": 199
+      }
+    },
+    "xgboost": {
+      "accuracy": 1.0,
+      "precision_attack": 1.0,
+      "recall_attack": 1.0,
+      "f1_attack": 1.0,
+      "confusion_matrix": {
+        "tn": 200,
+        "fp": 0,
+        "fn": 0,
+        "tp": 200
+      }
+    },
+    "ensemble": {
+      "accuracy": 0.9975,
+      "precision_attack": 1.0,
+      "recall_attack": 0.995,
+      "f1_attack": 0.9974937343358395,
+      "confusion_matrix": {
+        "tn": 200,
+        "fp": 0,
+        "fn": 1,
+        "tp": 199
+      }
+    }
+  },
+  "mitigation_stats": {
+    "total_alerts": 199,
+    "ips_blocked": 157,
+    "ips_unblocked": 0,
+    "ports_blocked": 157
+  },
+  "active_blocklist_size": 157,
+  "run_started_at": "2026-03-27 20:52:00,975939",
+  "run_finished_at": "2026-03-27 20:52:25,891070"
+}

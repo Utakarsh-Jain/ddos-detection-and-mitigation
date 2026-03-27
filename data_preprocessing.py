@@ -12,9 +12,10 @@ import glob
 import warnings
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.utils import shuffle
+from sklearn.preprocessing import LabelEncoder
 import joblib
+
+from config import RAW_DATA_DIR as CONFIG_RAW_DATA_DIR
 
 warnings.filterwarnings("ignore")
 
@@ -22,9 +23,8 @@ warnings.filterwarnings("ignore")
 # CONSTANTS
 
 
-RAW_DATA_DIR       = r"C:\Users\utaka\Downloads\archive (2)"
+RAW_DATA_DIR       = os.getenv("RAW_DATA_DIR", CONFIG_RAW_DATA_DIR)
 PROCESSED_DATA_DIR = "data/processed"
-SCALER_PATH        = "models/scaler.pkl"
 ENCODER_PATH       = "models/label_encoder.pkl"
 
 # Core behavioral features aligned with the project scope
@@ -199,8 +199,8 @@ def select_and_scale(df: pd.DataFrame):
     """
     1. Intersect SELECTED_FEATURES with available columns.
     2. Append engineered feature columns.
-    3. Fit + apply StandardScaler.
-    4. Return (X_scaled, y, feature_names).
+    3. Return raw feature matrix (scaling happens in model_training.py).
+    4. Return (X, y, feature_names).
     """
     engineered = [c for c in df.columns if c.startswith("feat_")]
     available   = [c for c in SELECTED_FEATURES if c in df.columns]
@@ -214,14 +214,7 @@ def select_and_scale(df: pd.DataFrame):
     X = df[all_features].values.astype(np.float32)
     y = df["label"].values.astype(int)
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    os.makedirs("models", exist_ok=True)
-    joblib.dump(scaler, SCALER_PATH)
-    print(f"[INFO] Scaler saved → {SCALER_PATH}")
-
-    return X_scaled, y, all_features
+    return X, y, all_features
 
 
 
@@ -247,13 +240,10 @@ def run_preprocessing():
     df = engineer_features(df)
 
     print("\n═══════ STEP 6: Feature Selection & Scaling ═══════")
-    X_scaled, y, feature_names = select_and_scale(df)
-
-    # Shuffle before saving
-    X_scaled, y = shuffle(X_scaled, y, random_state=42)
+    X, y, feature_names = select_and_scale(df)
 
     # Save processed arrays
-    np.save(os.path.join(PROCESSED_DATA_DIR, "X.npy"), X_scaled)
+    np.save(os.path.join(PROCESSED_DATA_DIR, "X.npy"), X)
     np.save(os.path.join(PROCESSED_DATA_DIR, "y.npy"), y)
 
     # Save feature names list
@@ -261,10 +251,10 @@ def run_preprocessing():
         f.write("\n".join(feature_names))
 
     print(f"\n[✓] Preprocessing complete.")
-    print(f"    X shape : {X_scaled.shape}")
+    print(f"    X shape : {X.shape}")
     print(f"    y shape : {y.shape}")
     print(f"    Saved   : {PROCESSED_DATA_DIR}/X.npy, y.npy, feature_names.txt")
-    return X_scaled, y, feature_names
+    return X, y, feature_names
 
 
 if __name__ == "__main__":
