@@ -10,7 +10,7 @@ import os
 import sys
 import time
 import numpy as np
-
+import matplotlib.pyplot as plt
 # Windows consoles often use cp1252; UTF-8 prints avoid UnicodeEncodeError
 if sys.platform == "win32":
     try:
@@ -27,7 +27,8 @@ from sklearn.model_selection  import train_test_split, StratifiedKFold, cross_va
 from sklearn.ensemble         import RandomForestClassifier
 from sklearn.metrics          import (accuracy_score, precision_score, recall_score,
                                       f1_score, roc_auc_score, confusion_matrix,
-                                      classification_report, RocCurveDisplay)
+                                      classification_report, RocCurveDisplay,
+                                      PrecisionRecallDisplay)
 import xgboost as xgb
 import joblib
 
@@ -142,6 +143,122 @@ def compare_models(results: dict):
     print(f"\n[✓] Model comparison chart → {path}")
 
 
+def plot_predicted_vs_actual(name: str, model, X_test: np.ndarray, y_test: np.ndarray):
+    """
+    Side-by-side bar chart comparing the actual vs predicted class counts,
+    plus a sample-level scatter strip showing correct vs misclassified points.
+    """
+    y_pred = model.predict(X_test)
+    y_proba = model.predict_proba(X_test)[:, 1]
+
+    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+
+    # ── Panel 1: Actual vs Predicted class counts ───────────────────────────
+    actual_counts = [int((y_test == 0).sum()), int((y_test == 1).sum())]
+    pred_counts   = [int((y_pred == 0).sum()), int((y_pred == 1).sum())]
+    x_pos = np.arange(2)
+    w = 0.35
+    axes[0].bar(x_pos - w/2, actual_counts, w, label="Actual",    color="#4C72B0")
+    axes[0].bar(x_pos + w/2, pred_counts,   w, label="Predicted", color="#DD8452")
+    axes[0].set_xticks(x_pos)
+    axes[0].set_xticklabels(["BENIGN", "ATTACK"])
+    axes[0].set_ylabel("Count")
+    axes[0].set_title(f"{name} — Actual vs Predicted Counts")
+    axes[0].legend()
+    for i in range(2):
+        axes[0].text(x_pos[i] - w/2, actual_counts[i] + max(actual_counts)*0.01,
+                     str(actual_counts[i]), ha="center", fontsize=9)
+        axes[0].text(x_pos[i] + w/2, pred_counts[i] + max(pred_counts)*0.01,
+                     str(pred_counts[i]), ha="center", fontsize=9)
+
+    # ── Panel 2: Sample-level strip — predicted probability vs index ────────
+    n = len(y_test)
+    correct = (y_pred == y_test)
+    indices = np.arange(n)
+    # Subsample if too many points (keep plot readable)
+    if n > 5000:
+        rng = np.random.RandomState(42)
+        sel = rng.choice(n, 5000, replace=False)
+        sel.sort()
+    else:
+        sel = indices
+
+    colors = np.where(correct[sel], "#55A868", "#C44E52")  # green / red
+    axes[1].scatter(sel, y_proba[sel], c=colors, s=4, alpha=0.5, edgecolors="none")
+    axes[1].axhline(0.5, color="grey", ls="--", lw=1, label="threshold = 0.5")
+    axes[1].set_xlabel("Sample Index")
+    axes[1].set_ylabel("Predicted Probability (Attack)")
+    axes[1].set_title(f"{name} — Prediction Confidence")
+    # Custom legend
+    from matplotlib.lines import Line2D
+    legend_elems = [
+        Line2D([0], [0], marker="o", color="w", markerfacecolor="#55A868",
+               markersize=7, label="Correct"),
+        Line2D([0], [0], marker="o", color="w", markerfacecolor="#C44E52",
+               markersize=7, label="Misclassified"),
+    ]
+    axes[1].legend(handles=legend_elems, loc="center right")
+
+    # ── Panel 3: Residual-style error plot ──────────────────────────────────
+    errors = y_proba[sel] - y_test[sel].astype(float)  # ideal = 0
+    axes[2].scatter(sel, errors, c=colors, s=4, alpha=0.5, edgecolors="none")
+    axes[2].axhline(0, color="grey", ls="--", lw=1)
+    axes[2].set_xlabel("Sample Index")
+    axes[2].set_ylabel("Prediction Error  (P(attack) − y_true)")
+    axes[2].set_title(f"{name} — Prediction Error Distribution")
+
+    plt.suptitle(f"{name} — Predicted vs Actual Analysis", fontsize=14, y=1.02)
+    plt.tight_layout()
+    path = os.path.join(PLOTS_DIR, f"{name.replace(' ', '_')}_predicted_vs_actual.png")
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  [✓] Predicted vs Actual plot → {path}")
+
+
+def plot_precision_recall_curve(name: str, model, X_test: np.ndarray, y_test: np.ndarray):
+    """
+    Precision-Recall curve — especially useful for imbalanced DDoS datasets
+    where high recall on the ATTACK class is critical.
+    """
+    y_proba = model.predict_proba(X_test)[:, 1]
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    PrecisionRecallDisplay.from_predictions(
+        y_test, y_proba, name=name, ax=ax, color="#4C72B0"
+    )
+    ax.set_title(f"{name} — Precision-Recall Curve")
+    ax.legend(loc="lower left")
+    plt.tight_layout()
+    path = os.path.join(PLOTS_DIR, f"{name.replace(' ', '_')}_precision_recall_curve.png")
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    print(f"  [✓] Precision-Recall curve → {path}")
+
+
+def plot_prediction_distribution(name: str, model, X_test: np.ndarray, y_test: np.ndarray):
+    """
+    Overlapping histogram of predicted probabilities, split by true class.
+    A well-separated distribution means the model is confident and accurate.
+    """
+    y_proba = model.predict_proba(X_test)[:, 1]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.hist(y_proba[y_test == 0], bins=60, alpha=0.6, color="#4C72B0",
+            label="True BENIGN", density=True)
+    ax.hist(y_proba[y_test == 1], bins=60, alpha=0.6, color="#C44E52",
+            label="True ATTACK", density=True)
+    ax.axvline(0.5, color="grey", ls="--", lw=1, label="Threshold = 0.5")
+    ax.set_xlabel("Predicted Probability (Attack)")
+    ax.set_ylabel("Density")
+    ax.set_title(f"{name} — Prediction Probability Distribution")
+    ax.legend()
+    plt.tight_layout()
+    path = os.path.join(PLOTS_DIR, f"{name.replace(' ', '_')}_prediction_distribution.png")
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    print(f"  [✓] Prediction distribution → {path}")
+
+
 
 # TRAINING PIPELINES
 
@@ -159,7 +276,7 @@ def train_random_forest(X_train, y_train):
         min_samples_leaf  = 2,
         max_features   = "sqrt",    # standard for classification
         class_weight   = "balanced",
-        n_jobs         = -1,        # use all CPU cores
+        n_jobs         = 8,
         random_state   = 42,
     )
     t0 = time.time()
@@ -179,7 +296,7 @@ def train_xgboost(X_train, y_train):
     scale = neg / pos if pos > 0 else 1.0
 
     xgb_model = xgb.XGBClassifier(
-        n_estimators      = 700,
+        n_estimators      = 700,        # use all CPU cores
         max_depth         = 8,
         learning_rate     = 0.03,
         subsample         = 0.8,
@@ -188,7 +305,7 @@ def train_xgboost(X_train, y_train):
         use_label_encoder = False,
         eval_metric       = "logloss",
         tree_method       = "hist",   # fast histogram method
-        n_jobs            = -1,
+        n_jobs            = 8,
         random_state      = 42,
     )
     t0 = time.time()
@@ -216,7 +333,7 @@ def run_training():
 
     # ── 80 / 20 Train-Test Split ─────────────────────────────────────────────
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.20, random_state=42, stratify=y
+        X, y, test_size=0.10, random_state=42, stratify=y
     )
     print(f"\n  Train samples : {len(X_train)}")
     print(f"  Test  samples : {len(X_test)}")
@@ -227,6 +344,9 @@ def run_training():
     rf_model = train_random_forest(X_train, y_train)
     results["Random Forest"] = evaluate_model("Random Forest", rf_model, X_test, y_test)
     plot_feature_importance("Random Forest", rf_model, feature_names)
+    plot_predicted_vs_actual("Random Forest", rf_model, X_test, y_test)
+    plot_precision_recall_curve("Random Forest", rf_model, X_test, y_test)
+    plot_prediction_distribution("Random Forest", rf_model, X_test, y_test)
 
     rf_path = os.path.join(MODELS_DIR, "rf_model.pkl")
     joblib.dump(rf_model, rf_path)
@@ -241,6 +361,9 @@ def run_training():
     xgb_model = train_xgboost(X_train, y_train)
     results["XGBoost"] = evaluate_model("XGBoost", xgb_model, X_test, y_test)
     plot_feature_importance("XGBoost", xgb_model, feature_names)
+    plot_predicted_vs_actual("XGBoost", xgb_model, X_test, y_test)
+    plot_precision_recall_curve("XGBoost", xgb_model, X_test, y_test)
+    plot_prediction_distribution("XGBoost", xgb_model, X_test, y_test)
 
     xgb_path = os.path.join(MODELS_DIR, "xgb_model.json")
     xgb_model.save_model(xgb_path)
