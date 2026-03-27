@@ -231,4 +231,4 @@ Multi-threaded worker pool achieves near-linear scaling with CPU cores on commod
 
 ---
 
-> ⚠️ **DISCLAIMER**: This is a draft for reference purposes. For actual filing with the Indian Patent Office (IPO), the applicants must engage a registered Patent Agent (under Section 127 of the Patents Act, 1970). Filing requires Form 1, Form 2 (Specification), Form 3 (Statement & Undertaking), Form 5 (Declaration of Inventorship), and applicable fees.
+>  **DISCLAIMER**: This is a draft for reference purposes. For actual filing with the Indian Patent Office (IPO), the applicants must engage a registered Patent Agent (under Section 127 of the Patents Act, 1970). Filing requires Form 1, Form 2 (Specification), Form 3 (Statement & Undertaking), Form 5 (Declaration of Inventorship), and applicable fees.

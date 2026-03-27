@@ -1,11 +1,4 @@
 """
-╔══════════════════════════════════════════════════════════════════════════════╗
-║           DDoS AI AGENT — MODEL TRAINING MODULE                             ║
-║  SRM Institute of Science and Technology | Dept. Networking & Communications ║
-║  Students : Utkarsh Jaiswal  (RA2311030010011)                               ║
-║             Utakarsh Jain    (RA2311030010054)                               ║
-║  Guide    : Dr. Karthikeyan H, Assistant Professor                           ║
-╚══════════════════════════════════════════════════════════════════════════════╝
 
 Module  : model_training.py
 Purpose : Train Random Forest and XGBoost classifiers on preprocessed
@@ -160,8 +153,8 @@ def train_random_forest(X_train, y_train):
     """
     print("\n═══════ Training Random Forest ═══════")
     rf = RandomForestClassifier(
-        n_estimators   = 200,       # number of trees
-        max_depth      = 20,        # prevent overfitting
+        n_estimators   = 300,       # number of trees
+        max_depth      = 8,        # prevent overfitting
         min_samples_split = 5,
         min_samples_leaf  = 2,
         max_features   = "sqrt",    # standard for classification
@@ -186,9 +179,9 @@ def train_xgboost(X_train, y_train):
     scale = neg / pos if pos > 0 else 1.0
 
     xgb_model = xgb.XGBClassifier(
-        n_estimators      = 300,
+        n_estimators      = 700,
         max_depth         = 8,
-        learning_rate     = 0.1,
+        learning_rate     = 0.03,
         subsample         = 0.8,
         colsample_bytree  = 0.8,
         scale_pos_weight  = scale,
