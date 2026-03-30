@@ -56,35 +56,35 @@ pip install -r requirements.txt
 
 ## Run the Pipeline
 
-### Step 1 — Preprocess Data
+### Step 1 - Preprocess Data
 ```bash
 python data_preprocessing.py
 ```
 Outputs: `data/processed/X.npy`, `y.npy`, `feature_names.txt`, `models/scaler.pkl`
 
-### Step 2 — Train Models
+### Step 2 - Train Models
 ```bash
 python model_training.py
 ```
 Outputs: `models/rf_model.pkl`, `models/xgb_model.json`, `plots/` (ROC, CM, feature importance)
 
-### Step 3 — Run Agent (Simulation Mode)
+### Step 3 - Run Agent (Simulation Mode)
 ```bash
 python agent_core.py --mode simulate --data data/raw/your_file.csv --max_rows 5000
 ```
 
-### Step 3b — Run Agent (Live Mode)
+### Step 3b - Run Agent (Live Mode)
 ```bash
 # Requires FireNet integration (see agent_core.py live mode section)
 python agent_core.py --mode live
 ```
 
-### Step 4 — Test Mitigation Handler Standalone
+### Step 4 - Test Mitigation Handler Standalone
 ```bash
 python mitigation_handler.py
 ```
 
-### Step 5 — Explore Distributed Pipeline
+### Step 5 - Explore Distributed Pipeline
 ```bash
 python scalable_pipeline.py
 ```
