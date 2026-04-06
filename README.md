@@ -2,7 +2,7 @@
 
 ## Innovation
 
-Traditional DDoS defenses rely on **static signatures** and **manual thresholds** — both fail against modern, evolving attacks. This project introduces an **AI-powered agent** that:
+Traditional DDoS defenses rely on **static signatures** and **manual thresholds** - both fail against modern, evolving attacks. This project introduces an **AI-powered agent** that:
 
 - **Learns** traffic behavior from the real-world CIC-DDoS2019 dataset
 - **Detects** attacks using an ensemble of Random Forest + XGBoost (weighted soft-vote)
