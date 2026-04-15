@@ -123,7 +123,6 @@ Confidence ≥ 0.95  →  Immediate hard block (iptables DROP + port block)
 Confidence ≥ 0.80  →  Rate-limit (512 kbps cap); hard block after 3 hits
 Confidence ≥ 0.60  →  Log-only / monitor
 ```
-- Auto-unblock after **300 seconds** (configurable)
 - All events written to `logs/alerts.csv` for forensics
 
 ---
